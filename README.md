@@ -1,3 +1,4 @@
+
 # <div align="center">
 
 # 🚀 InferSight
@@ -8,13 +9,13 @@
 
 <br>
 
-![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge\&logo=python\&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge\&logo=fastapi\&logoColor=white)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge\&logo=postgresql\&logoColor=white)
-![Redis](https://img.shields.io/badge/Redis-DC382D?style=for-the-badge\&logo=redis\&logoColor=white)
-![React](https://img.shields.io/badge/React-20232A?style=for-the-badge\&logo=react\&logoColor=61DAFB)
-![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge\&logo=docker\&logoColor=white)
-![JWT](https://img.shields.io/badge/JWT-000000?style=for-the-badge\&logo=jsonwebtokens)
+![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white)
+![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![JWT](https://img.shields.io/badge/JWT-000000?style=for-the-badge&logo=jsonwebtokens)
 
 ---
 
@@ -94,6 +95,15 @@ Example:
 
 ---
 
+## 🔔 Alerting & Escalation
+
+* Rule-based anomaly alerts
+* Automated routing and escalation
+* Slack delivery integration
+* Five-minute escalation beat (Celery)
+
+---
+
 ## 📁 Report Generation
 
 Generate professional reports in:
@@ -167,23 +177,23 @@ with one click.
 ## Backend
 
 * FastAPI
-* Python
-* SQLAlchemy
-* PostgreSQL
+* Python 3.11+
+* SQLAlchemy 2.0
+* PostgreSQL (psycopg v3)
 * Redis
+* Celery
 * JWT Authentication
-* Alembic
-* Pydantic
+* Pydantic / Pydantic Settings
 
 ---
 
 ## Frontend
 
-* React
+* React 18
 * TypeScript
-* Tailwind CSS
-* Axios
-* Recharts
+* Vite
+* React Router
+* CSS (global stylesheet)
 
 ---
 
@@ -201,8 +211,8 @@ with one click.
 
 * Docker
 * Docker Compose
-* GitHub Actions
-* Nginx
+* Render (Blueprint)
+* Vercel
 
 ---
 
@@ -213,22 +223,31 @@ InferSight
 │
 ├── backend
 │   ├── app
-│   ├── api
-│   ├── services
-│   ├── models
-│   ├── schemas
-│   ├── middleware
-│   └── core
+│   │   ├── api/v1      # REST endpoints (auth, analytics, alerts, ...)
+│   │   ├── core        # settings, security, celery config
+│   │   ├── database    # session + schema bootstrap
+│   │   ├── models      # SQLAlchemy models
+│   │   ├── schemas     # Pydantic schemas
+│   │   ├── services    # business logic
+│   │   ├── tasks       # Celery background tasks
+│   │   └── utils       # helpers
+│   ├── scripts         # seed / admin scripts
+│   └── tests           # pytest suite
 │
 ├── frontend
 │   ├── src
-│   ├── components
-│   ├── pages
-│   └── services
+│   │   ├── api         # typed API clients
+│   │   ├── app         # routing + providers
+│   │   ├── components  # UI, charts, layouts
+│   │   ├── hooks       # reusable hooks
+│   │   ├── lib         # helpers
+│   │   ├── pages       # screens (Dashboard, Insights, Alerts, ...)
+│   │   ├── styles      # global CSS
+│   │   └── types       # TypeScript types
+│   └── vite.config.ts
 │
-├── docker
 ├── docs
-├── tests
+├── render.yaml         # Render Blueprint (API + Postgres + static site)
 └── README.md
 ```
 
@@ -239,7 +258,7 @@ InferSight
 Clone the repository
 
 ```bash
-git clone https://github.com/yourusername/InferSight.git
+git clone https://github.com/Mdehteshamulhaque1/InferSight.git
 ```
 
 Move into the project
@@ -248,10 +267,28 @@ Move into the project
 cd InferSight
 ```
 
-Install backend dependencies
+## Backend
+
+Create and activate a virtual environment
+
+```bash
+cd backend
+python -m venv .venv
+.venv\Scripts\activate        # Windows
+source .venv/bin/activate     # Linux / macOS
+```
+
+Install dependencies
 
 ```bash
 pip install -r requirements.txt
+```
+
+Configure environment
+
+```bash
+copy .env.example .env        # Windows
+cp .env.example .env          # Linux / macOS
 ```
 
 Run the server
@@ -260,11 +297,23 @@ Run the server
 uvicorn app.main:app --reload
 ```
 
-Frontend
+## Frontend
 
 ```bash
+cd frontend
 npm install
 npm run dev
+```
+
+Open the app at `http://localhost:5173` and the API docs at `http://localhost:8000/docs`.
+
+---
+
+# 🧪 Testing
+
+```bash
+cd backend
+pytest
 ```
 
 ---
@@ -273,14 +322,13 @@ npm run dev
 
 The project ships with ready-made configs for a **Render backend + Vercel frontend** split.
 
-## Render (backend API)
+## Render (backend API + PostgreSQL)
 
 1. Push the repo to GitHub.
 2. In Render, choose **New > Blueprint** and point at the repo — `render.yaml` provisions the API service **and** a free PostgreSQL database automatically.
 3. In the service dashboard, set these env vars (marked `sync: false` in the blueprint):
    - `SECRET_KEY` — a long random string (e.g. `openssl rand -hex 32`)
    - `ADMIN_PASSWORD` — password for the bootstrap admin
-   - `CORS_ORIGINS` — your Vercel frontend URL, e.g. `https://infersight.vercel.app`
 4. Deploy. The API is available at `https://<service>.onrender.com`; Swagger at `/docs`.
 
 > On first startup the app creates the schema and seeds the admin (`ADMIN_EMAIL`, default `admin@infersight.dev`). Tables are created with `create_all`, so they are never altered after that.
