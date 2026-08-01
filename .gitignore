@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+
+# Env / secrets
+.env
+.env.local
+
+# Database
+*.db
+*.sqlite3
+
+# Frontend
+node_modules/
+dist/
+.vercel/
+
+# Logs
+*.log
