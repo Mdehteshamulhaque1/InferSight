@@ -73,6 +73,6 @@ services:
 
 databases:
   - name: infersight-db
-    plan: basic
+    plan: basic-256mb
     databaseName: infersight
     user: infersight
