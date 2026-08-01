@@ -35,7 +35,7 @@ services:
     name: infersight-api
     runtime: python
     rootDir: backend
-    plan: starter
+    plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
@@ -73,6 +73,6 @@ services:
 
 databases:
   - name: infersight-db
-    plan: basic-256mb
+    plan: free
     databaseName: infersight
     user: infersight
