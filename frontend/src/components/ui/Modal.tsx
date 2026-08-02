@@ -14,22 +14,26 @@ interface ModalProps {
 
 export function Modal({ title, subtitle, open, onClose, children, footer, wide }: ModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null)
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
 
   useEffect(() => {
     if (!open) return
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') onCloseRef.current()
     }
     window.addEventListener('keydown', onKey)
-    const el = dialogRef.current?.querySelector<HTMLElement>('input, select, textarea, button')
+    const el =
+      dialogRef.current?.querySelector<HTMLElement>('input, select, textarea') ??
+      dialogRef.current?.querySelector<HTMLElement>('button')
     el?.focus()
     return () => {
       document.body.style.overflow = prev
       window.removeEventListener('keydown', onKey)
     }
-  }, [open, onClose])
+  }, [open])
 
   if (!open) return null
 
