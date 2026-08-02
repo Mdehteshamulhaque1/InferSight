@@ -1,5 +1,6 @@
 import { request } from './http'
 import type {
+  AnalysisSummary,
   ChatOut,
   DatasetVersionOut,
   HealthScoreOut,
@@ -13,6 +14,7 @@ import type {
 } from '../types'
 
 export const intelligenceApi = {
+  summary: (id: number) => request<AnalysisSummary>(`/datasets/${id}/summary`),
   profile: (id: number) => request<ProfileOut>(`/datasets/${id}/profile`),
   discoverKpis: (id: number) => request<Kpi[]>(`/datasets/${id}/kpis/discover`),
   recommendations: (id: number) =>

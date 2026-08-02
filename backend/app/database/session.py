@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Generator
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from app.core.config import get_settings
@@ -54,7 +54,57 @@ def init_db() -> None:
     from app import models  # noqa: F401
 
     Base.metadata.create_all(bind=engine)
+    _apply_lightweight_migrations(SessionLocal)
 
     from app.services.auth_service import ensure_admin
 
     ensure_admin(SessionLocal())
+
+
+def _apply_lightweight_migrations(db_factory) -> None:
+    """Add columns introduced after a table's initial create.
+
+    create_all never alters existing tables, so a deployed Postgres database
+    predating a new column would otherwise fail at runtime. SQLite does not
+    support ADD COLUMN IF NOT EXISTS, so the columns are checked via PRAGMA
+    first; failures are non-fatal so a fresh database stays untouched.
+    """
+    sqlite_columns = [
+        ("datasets", "last_import_at", "TIMESTAMP WITH TIME ZONE"),
+        ("dataset_versions", "filename", "VARCHAR(255)"),
+        (
+            "dataset_versions",
+            "status",
+            "VARCHAR(32) NOT NULL DEFAULT 'success'",
+        ),
+    ]
+    postgres_statements = [
+        "ALTER TABLE datasets ADD COLUMN IF NOT EXISTS last_import_at TIMESTAMP WITH TIME ZONE",
+        "ALTER TABLE dataset_versions ADD COLUMN IF NOT EXISTS filename VARCHAR(255)",
+        "ALTER TABLE dataset_versions ADD COLUMN IF NOT EXISTS status VARCHAR(32) NOT NULL DEFAULT 'success'",
+    ]
+
+    dialect = engine.dialect.name
+    with db_factory() as db:
+        for statement in postgres_statements if dialect != "sqlite" else []:
+            try:
+                db.execute(text(statement))
+                db.commit()
+            except Exception:
+                db.rollback()
+        if dialect == "sqlite":
+            for table, column, definition in sqlite_columns:
+                existing = set(
+                    row[1]
+                    for row in db.execute(text(f"PRAGMA table_info({table})")).all()
+                )
+                if column not in existing:
+                    try:
+                        db.execute(
+                            text(
+                                f"ALTER TABLE {table} ADD COLUMN {column} {definition}"
+                            )
+                        )
+                        db.commit()
+                    except Exception:
+                        db.rollback()

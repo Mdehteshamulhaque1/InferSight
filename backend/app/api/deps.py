@@ -84,3 +84,21 @@ def rate_limit(max_requests: int, window_seconds: int):
         cache_service.set(key, str(count + 1), window_seconds)
 
     return limiter
+
+
+def user_rate_limit(max_requests: int, window_seconds: int):
+    """Dependency factory enforcing a sliding-window rate limit per user per
+    endpoint path, so one heavy endpoint cannot exhaust another's budget."""
+
+    def limiter(request: Request, user: CurrentUser) -> None:
+        key = f"rl:u:{user.id}:{request.url.path}"
+        raw = cache_service.get(key)
+        count = int(raw) if raw is not None else 0
+        if count >= max_requests:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=f"rate limit exceeded: {max_requests} requests per {window_seconds}s",
+            )
+        cache_service.set(key, str(count + 1), window_seconds)
+
+    return limiter

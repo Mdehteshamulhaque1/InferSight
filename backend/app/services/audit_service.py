@@ -65,6 +65,8 @@ def create_version(
     source: str,
     points_added: int,
     points_removed: int,
+    filename: str | None = None,
+    status: str = "success",
 ) -> DatasetVersion:
     latest = db.scalar(
         select(func.max(DatasetVersion.version_no)).where(
@@ -84,6 +86,8 @@ def create_version(
         points_added=points_added,
         points_removed=points_removed,
         total_after=total,
+        filename=filename,
+        status=status,
         snapshot=snapshot_points(db, dataset),
     )
     db.add(version)

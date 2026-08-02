@@ -8,13 +8,16 @@ import { CommandPalette } from './CommandPalette'
 import type { IconProps } from '../ui/icons'
 import {
   IconBell,
+  IconChat,
   IconDashboard,
   IconDataset,
+  IconDownload,
   IconInsight,
   IconLogout,
   IconMenu,
   IconSearch,
   IconTrend,
+  IconUpload,
 } from '../ui/icons'
 
 interface NavItem {
@@ -28,8 +31,9 @@ const sections: { label: string; items: NavItem[] }[] = [
   {
     label: 'Workspace',
     items: [
+      { to: '/app/home', label: 'Copilot', icon: IconChat },
       { to: '/app/dashboard', label: 'Dashboard', icon: IconDashboard },
-      { to: '/app/datasets', label: 'Datasets', icon: IconDataset },
+      { to: '/app/upload', label: 'Upload', icon: IconUpload },
       { to: '/app/insights', label: 'Insights', icon: IconInsight },
     ],
   },
@@ -37,13 +41,24 @@ const sections: { label: string; items: NavItem[] }[] = [
     label: 'Monitor',
     items: [{ to: '/app/alerts', label: 'Alerts', icon: IconBell, badge: true }],
   },
+  {
+    label: 'Data',
+    items: [{ to: '/app/datasets', label: 'Datasets', icon: IconDataset }],
+  },
+  {
+    label: 'Output',
+    items: [{ to: '/app/reports', label: 'Reports', icon: IconDownload }],
+  },
 ]
 
 const titles: Record<string, string> = {
+  '/app/home': 'Copilot',
   '/app/dashboard': 'Dashboard',
+  '/app/upload': 'Upload',
   '/app/datasets': 'Datasets',
   '/app/alerts': 'Alerts',
   '/app/insights': 'Insights',
+  '/app/reports': 'Reports',
 }
 
 export function Layout() {

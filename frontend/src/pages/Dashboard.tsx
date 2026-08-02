@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../app/providers/AuthContext'
 import { api } from '../api'
 import type {
   AnalyticsResponse,
@@ -6,13 +8,24 @@ import type {
   DatasetRead,
   ForecastResponse,
   InsightOut,
+  RecommendationOut,
+  RootCauseOut,
 } from '../types'
 import { useAsync } from '../hooks/useAsync'
 import { usePageTitle } from '../hooks/usePageTitle'
 import { LineChart } from '../components/charts/LineChart'
+import { Dropzone } from '../components/ui/Dropzone'
 import { useToast } from '../components/ui/Toast'
-import { IconDataset, IconDownload, IconRefresh, IconSpark, IconTrend } from '../components/ui/icons'
-import { formatCompact, formatCurrency, severityClass } from '../lib/format'
+import {
+  IconBell,
+  IconDownload,
+  IconRefresh,
+  IconShield,
+  IconSpark,
+  IconTrend,
+  IconUpload,
+} from '../components/ui/icons'
+import { formatCompact, formatCurrency, formatPct, severityClass } from '../lib/format'
 
 function KpiCard({
   label,
@@ -48,14 +61,90 @@ function KpiCard({
   )
 }
 
+function ForecastSummary({
+  data,
+  fmt,
+}: {
+  data: ForecastResponse
+  fmt: (n: number) => string
+}) {
+  const pts = data.points ?? []
+  const first = pts[0]
+  const last = pts[pts.length - 1]
+  const dir = last && first ? (last.value >= first.value ? '▲' : '▼') : null
+  const chg =
+    last && first && first.value !== 0
+      ? ((last.value - first.value) / Math.abs(first.value)) * 100
+      : null
+  return (
+    <div>
+      <div className="kpi-grid">
+        <div className="card kpi-card">
+          <div className="kpi-label">Projected trend</div>
+          <div className={`kpi-value num ${dir === '▲' ? 'up' : 'down'}`}>
+            {dir ?? '—'} {chg != null ? `${Math.abs(chg).toFixed(1)}%` : ''}
+          </div>
+          <div className="kpi-change">over next {data.horizon} periods</div>
+        </div>
+        <div className="card kpi-card">
+          <div className="kpi-label">Forecast endpoint</div>
+          <div className="kpi-value num">{fmt(last?.value ?? 0)}</div>
+          <div className="kpi-change">
+            at{' '}
+            {last
+              ? new Date(last.timestamp).toLocaleDateString(undefined, {
+                  month: 'short',
+                  day: 'numeric',
+                })
+              : '—'}
+          </div>
+        </div>
+        {(
+          [
+            ['MAPE', data.metrics.mape != null ? `${data.metrics.mape.toFixed(1)}%` : '—'],
+            ['MAE', data.metrics.mae != null ? formatCompact(data.metrics.mae) : '—'],
+            ['RMSE', data.metrics.rmse != null ? formatCompact(data.metrics.rmse) : '—'],
+          ] as [string, string][]
+        ).map(([k, v]) => (
+          <div className="card kpi-card" key={k}>
+            <div className="kpi-label">{k}</div>
+            <div className="kpi-value num">{v}</div>
+            <div className="kpi-change" style={{ visibility: 'hidden' }}>·</div>
+          </div>
+        ))}
+      </div>
+      <div className="row mt-6" style={{ gap: 8, flexWrap: 'wrap' }}>
+        <span className="pill pill-soft">
+          method <strong className="num">{data.method}</strong>
+        </span>
+        <span className="pill pill-soft">
+          seasonality <strong className="num">{data.seasonality ? 'detected' : 'none'}</strong>
+        </span>
+        <span className="pill pill-soft">
+          confidence band <strong className="num">80%</strong>
+        </span>
+      </div>
+    </div>
+  )
+}
+
 export function Dashboard() {
   const toast = useToast()
+  const navigate = useNavigate()
+  const { user } = useAuth()
   usePageTitle('Dashboard')
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [tab, setTab] = useState<'series' | 'forecast'>('series')
 
   const datasets = useAsync(() => api.listDatasets(), [])
   const datasetsList = datasets.data?.items ?? []
+
+  const firstName = user?.full_name?.trim().split(/\s+/)[0] || 'back'
+  const greeting = `Welcome ${firstName}`
+
+  function startUpload(file?: File) {
+    navigate('/app/upload', file ? { state: { file } } : undefined)
+  }
 
   const activeId = selectedId ?? datasetsList[0]?.id ?? null
 
@@ -75,6 +164,14 @@ export function Dashboard() {
     [activeId]
   )
   const insights = useAsync<{ items: InsightOut[] }>(() => api.listInsights(1, 20), [])
+  const recommendations = useAsync<RecommendationOut[]>(
+    () => (activeId != null ? api.recommendations(activeId) : Promise.reject(new Error('no dataset'))),
+    [activeId]
+  )
+  const rootCause = useAsync<RootCauseOut>(
+    () => (activeId != null ? api.rootCause(activeId) : Promise.reject(new Error('no dataset'))),
+    [activeId]
+  )
 
   const dataset: DatasetRead | undefined = datasetsList.find((d) => d.id === activeId)
 
@@ -128,18 +225,34 @@ export function Dashboard() {
       <div>
         <div className="page-head">
           <div>
-            <h1>Dashboard</h1>
-            <p className="sub">Revenue intelligence across your connected datasets.</p>
+            <h1>{greeting}</h1>
+            <p className="sub">Upload your first dataset — we’ll detect the columns and analyze it automatically.</p>
           </div>
         </div>
+
         <div className="card">
-          <div className="empty">
-            <span className="empty-state">
-              <span className="ico"><IconDataset size={20} /></span>
-              <h3>No datasets yet</h3>
-              <p>Create one from the Datasets page to start seeing KPIs, forecasts, and insights.</p>
-            </span>
+          <div className="wizard-hero">
+            <h2>Upload your data</h2>
+            <p>Drop a CSV and we’ll handle the rest. No forms, no setup.</p>
           </div>
+          <Dropzone
+            className="wizard-dropzone"
+            onFile={(f) => startUpload(f)}
+            title="Drop your CSV here"
+            subtitle="or browse files · .csv, .xlsx, .xls, .json"
+          />
+          <div className="row mt-6" style={{ gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <span className="pill pill-green">Auto column detection</span>
+            <span className="pill pill-green">Metric & granularity inferred</span>
+            <span className="pill pill-green">Instant analysis</span>
+          </div>
+        </div>
+
+        <div className="card mt-6">
+          <div className="section-title">
+            <span>Recent datasets</span>
+          </div>
+          <div className="empty">No datasets yet. Upload a CSV to generate your first business report.</div>
         </div>
       </div>
     )
@@ -150,12 +263,15 @@ export function Dashboard() {
 
   return (
     <div>
-      <div className="page-head">
-        <div>
-          <h1>Dashboard</h1>
-          <p className="sub">Revenue intelligence across your connected datasets.</p>
-        </div>
-        <div className="actions">
+        <div className="page-head">
+          <div>
+            <h1>{greeting}</h1>
+            <p className="sub">Revenue intelligence across your connected datasets.</p>
+          </div>
+          <div className="actions">
+            <button className="btn btn-primary" onClick={() => startUpload()} title="Upload a new data file">
+              <IconUpload size={14} /> Upload your data
+            </button>
           <select
             className="select"
             value={activeId ?? ''}
@@ -194,8 +310,7 @@ export function Dashboard() {
         ))}
       </div>
 
-      <div className="grid-2-1 mt-6">
-        <div className="card">
+      <div className="card mt-6">
           <div className="section-title">
             <span>Time series</span>
             <div className="tabs" role="tablist">
@@ -233,32 +348,6 @@ export function Dashboard() {
             <LineChart data={series} forecast={forecastPts} height={320} formatY={fmt} />
           )}
 
-          {tab === 'forecast' && forecast.data && (
-            <div className="row mt-8" style={{ gap: 20, flexWrap: 'wrap' }}>
-              <span className="meta-chip">
-                method <strong className="num">{forecast.data.method}</strong>
-              </span>
-              <span className="meta-chip">
-                horizon <strong className="num">{forecast.data.horizon}d</strong>
-              </span>
-              {forecast.data.metrics.mape != null && (
-                <span className="meta-chip">
-                  MAPE <strong className="num">{forecast.data.metrics.mape.toFixed(1)}%</strong>
-                </span>
-              )}
-              {forecast.data.metrics.mae != null && (
-                <span className="meta-chip">
-                  MAE <strong className="num">{formatCompact(forecast.data.metrics.mae)}</strong>
-                </span>
-              )}
-              {forecast.data.metrics.rmse != null && (
-                <span className="meta-chip">
-                  RMSE <strong className="num">{formatCompact(forecast.data.metrics.rmse)}</strong>
-                </span>
-              )}
-            </div>
-          )}
-
           {tab === 'series' && trend && (
             <div className="row mt-8" style={{ gap: 12 }}>
               <span className="pill pill-ruby"><IconTrend size={11} /> {trend.direction}</span>
@@ -270,44 +359,24 @@ export function Dashboard() {
           )}
         </div>
 
-        <div className="card">
-          <div className="section-title">
-            <span>Anomalies</span>
-            <span className="num muted">{anomalyList.length} flagged</span>
-          </div>
-          {anomalies.loading ? (
-            <div className="empty"><span className="spinner" /></div>
-          ) : anomalyList.length === 0 ? (
-            <div className="empty">No anomalies detected in this window.</div>
-          ) : (
-            <div style={{ maxHeight: 340, overflowY: 'auto' }}>
-              {anomalyList.slice(0, 8).map((a, i) => (
-                <div key={`${a.timestamp}-${i}`} className="insight">
-                  <div className={`dot ${severityClass(a.severity)}`} />
-                  <div className="body">
-                    <div className="row" style={{ gap: 8 }}>
-                      <span className="pill pill-ruby">{a.direction}</span>
-                      <span className="pill pill-ink num">{a.score.toFixed(1)}σ</span>
-                    </div>
-                    <div className="text mt-2">{a.reason}</div>
-                    <div className="meta num">
-                      {new Date(a.timestamp).toLocaleDateString(undefined, {
-                        month: 'short',
-                        day: 'numeric',
-                      })}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
       <div className="grid-2 mt-6">
         <div className="card">
           <div className="section-title">
-            <span><IconSpark size={15} /> AI insights</span>
+            <span>Forecast · next {forecast.data?.horizon ?? 30} days</span>
+            <span className="pill pill-soft num">{forecast.data?.method ?? '—'}</span>
+          </div>
+          {forecast.loading ? (
+            <div className="empty"><span className="spinner" /></div>
+          ) : !forecast.data ? (
+            <div className="empty">{forecast.error ?? 'No forecast available.'}</div>
+          ) : (
+            <ForecastSummary data={forecast.data} fmt={fmt} />
+          )}
+        </div>
+
+        <div className="card">
+          <div className="section-title">
+            <span><IconSpark size={15} /> AI summary</span>
             <button
               className="btn btn-ghost btn-sm"
               onClick={() => void generateInsight()}
@@ -332,6 +401,116 @@ export function Dashboard() {
                       <span className="pill pill-ink">{ins.kind}</span>
                       <span>{datasetName.get(String(ins.dataset_id)) ?? '—'}</span>
                       <span className="num">{new Date(ins.created_at).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="grid-2 mt-6">
+        <div className="card">
+          <div className="section-title">
+            <span><IconShield size={15} /> Recommendations</span>
+            {recommendations.data != null && (
+              <span className="num muted">{recommendations.data.length}</span>
+            )}
+          </div>
+          {recommendations.loading ? (
+            <div className="empty"><span className="spinner" /></div>
+          ) : (recommendations.data ?? []).length === 0 ? (
+            <div className="empty">No recommendations available.</div>
+          ) : (
+            <div style={{ display: 'grid', gap: 12 }}>
+              {recommendations.data?.map((r) => (
+                <div key={r.id} className="row" style={{ gap: 14, alignItems: 'flex-start' }}>
+                  <span className={`pill ${r.severity === 'critical' ? 'pill-primary' : r.severity === 'warning' ? 'pill-ink' : 'pill-soft'}`}>
+                    {r.severity}
+                  </span>
+                  <div>
+                    <div className="strong">{r.action}</div>
+                    <div className="muted" style={{ fontSize: 13 }}>{r.rationale}</div>
+                    <div className="meta num" style={{ fontSize: 12 }}>{r.category} · {r.impact}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="card">
+          <div className="section-title">
+            <span><IconBell size={15} /> Root cause</span>
+          </div>
+          {rootCause.loading ? (
+            <div className="empty"><span className="spinner" /></div>
+          ) : rootCause.data ? (
+            <div>
+              <div className="kpi-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+                <div className="card kpi-card">
+                  <div className="kpi-label">Actual</div>
+                  <div className="kpi-value num">{fmt(rootCause.data.actual)}</div>
+                </div>
+                <div className="card kpi-card">
+                  <div className="kpi-label">Expected</div>
+                  <div className="kpi-value num">{fmt(rootCause.data.expected)}</div>
+                </div>
+                <div className="card kpi-card">
+                  <div className="kpi-label">Delta</div>
+                  <div className={`kpi-value num ${rootCause.data.delta >= 0 ? 'up' : 'down'}`}>
+                    {formatPct(rootCause.data.delta_pct)}
+                  </div>
+                </div>
+              </div>
+              <div className="mt-6" style={{ display: 'grid', gap: 10 }}>
+                {rootCause.data.hypotheses.slice(0, 3).map((h, i) => (
+                  <div key={i} className="insight">
+                    <div className="dot" style={{ background: 'var(--amber)' }} />
+                    <div className="body">
+                      <div className="title">{h.title}</div>
+                      <div className="text">{h.evidence}</div>
+                      <div className="meta"><span className="pill pill-ink">{h.confidence}</span></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="empty">
+              {rootCause.error ?? 'No anomalies detected, so there is nothing to root-cause yet.'}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="grid-2 mt-6">
+        <div className="card">
+          <div className="section-title">
+            <span>Anomalies</span>
+            <span className="num muted">{anomalyList.length} flagged</span>
+          </div>
+          {anomalies.loading ? (
+            <div className="empty"><span className="spinner" /></div>
+          ) : anomalyList.length === 0 ? (
+            <div className="empty">No anomalies detected in this window.</div>
+          ) : (
+            <div style={{ maxHeight: 320, overflowY: 'auto' }}>
+              {anomalyList.slice(0, 8).map((a, i) => (
+                <div key={`${a.timestamp}-${i}`} className="insight">
+                  <div className={`dot ${severityClass(a.severity)}`} />
+                  <div className="body">
+                    <div className="row" style={{ gap: 8 }}>
+                      <span className="pill pill-ruby">{a.direction}</span>
+                      <span className="pill pill-ink num">{a.score.toFixed(1)}σ</span>
+                    </div>
+                    <div className="text mt-2">{a.reason}</div>
+                    <div className="meta num">
+                      {new Date(a.timestamp).toLocaleDateString(undefined, {
+                        month: 'short',
+                        day: 'numeric',
+                      })}
                     </div>
                   </div>
                 </div>

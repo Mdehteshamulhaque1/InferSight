@@ -6,10 +6,13 @@ import { Alerts } from '../pages/Alerts'
 import { Dashboard } from '../pages/Dashboard'
 import { DatasetDetail } from '../pages/DatasetDetail'
 import { Datasets } from '../pages/Datasets'
+import { Home } from '../pages/Home'
 import { Insights } from '../pages/Insights'
 import { Landing } from '../pages/Landing'
 import { Login } from '../pages/Login'
 import { Register } from '../pages/Register'
+import { Upload } from '../pages/Upload'
+import { Reports } from '../pages/Reports'
 
 function Protected({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth()
@@ -38,12 +41,15 @@ export function App() {
           </Protected>
         }
       >
-        <Route index element={<Navigate to="dashboard" replace />} />
+        <Route index element={<Navigate to="home" replace />} />
+        <Route path="home" element={<Home />} />
         <Route path="dashboard" element={<Dashboard />} />
+        <Route path="upload" element={<Upload />} />
         <Route path="datasets" element={<Datasets />} />
         <Route path="datasets/:id" element={<DatasetDetail />} />
         <Route path="alerts" element={<Alerts />} />
         <Route path="insights" element={<Insights />} />
+        <Route path="reports" element={<Reports />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

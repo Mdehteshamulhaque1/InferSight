@@ -46,6 +46,7 @@ def _dataset_read(db: DbSession, dataset) -> DatasetRead:
             "is_active": dataset.is_active,
             "created_at": dataset.created_at,
             "updated_at": dataset.updated_at,
+            "last_import_at": dataset.last_import_at,
             "point_count": count,
             "last_point_at": last_ts,
         }

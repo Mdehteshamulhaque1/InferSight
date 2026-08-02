@@ -37,6 +37,9 @@ class Dataset(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, onupdate=utcnow
     )
+    last_import_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     owner = relationship("User", back_populates="datasets")
     organization = relationship("Organization", back_populates="datasets")

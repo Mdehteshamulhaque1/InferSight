@@ -26,6 +26,7 @@ export interface DatasetRead {
   is_active: boolean
   created_at: string
   updated_at: string
+  last_import_at?: string | null
   point_count: number
   last_point_at?: string | null
 }
@@ -250,6 +251,35 @@ export interface ChatOut {
   followups: string[]
 }
 
+export interface AnalysisSummary {
+  dataset_id: number
+  name: string
+  currency: string | null
+  granularity: string
+  kpis: {
+    key: string
+    label: string
+    value: number
+    unit?: string
+    change_pct?: number | null
+  }[]
+  trend: {
+    direction: string
+    slope_per_period_pct: number
+    r_squared: number
+  }
+  anomaly_count: number
+  critical_anomalies: number
+  forecast: {
+    method: string
+    horizon: number
+    seasonality: boolean
+    mape?: number | null
+    points: { timestamp: string; value: number; lower?: number | null; upper?: number | null }[]
+  } | null
+  health: { score: number; grade: string; verdict: string }
+}
+
 export interface AlertOut {
   id: number
   dataset_id?: number | null
@@ -320,6 +350,8 @@ export interface DatasetVersionOut {
   points_added: number
   points_removed: number
   total_after: number
+  filename?: string | null
+  status: string
   created_at: string
 }
 
@@ -346,4 +378,20 @@ export interface IngestResult {
   dropped: number
   replaced: boolean
   point_count: number
+}
+
+export interface PreviewReport {
+  filename: string
+  columns: string[]
+  timestamp_column: string
+  value_column: string
+  detected_granularity: string
+  parsed_points: number
+  dropped: number
+  sample: { timestamp: string; value: number; meta?: Record<string, unknown> | null }[]
+}
+
+export interface AutoImportResult {
+  dataset: DatasetRead
+  result: IngestResult
 }

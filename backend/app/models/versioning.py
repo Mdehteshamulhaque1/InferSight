@@ -37,6 +37,8 @@ class DatasetVersion(Base):
     points_added: Mapped[int] = mapped_column(default=0)
     points_removed: Mapped[int] = mapped_column(default=0)
     total_after: Mapped[int] = mapped_column(default=0)
+    filename: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    status: Mapped[str] = mapped_column(String(32), default="success")
     snapshot: Mapped[dict[str, Any]] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 

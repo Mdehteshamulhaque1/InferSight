@@ -5,9 +5,9 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.api.deps import CurrentUser, DbSession
+from app.api.deps import CurrentUser, DbSession, user_rate_limit
 from app.schemas.common import Message, Paginated
 from app.schemas.intelligence import (
     ChatOut,
@@ -23,6 +23,7 @@ from app.services import (
     analytics_service,
     audit_service,
     dataset_service,
+    forecast_service,
     intelligence_service,
 )
 from app.services.anomaly_service import detect as detect_anomalies
@@ -210,8 +211,82 @@ def dataset_health(dataset_id: int, db: DbSession, user: CurrentUser) -> HealthS
     )
 
 
+@INTELLIGENCE.get(
+    "/{dataset_id}/summary",
+    summary="Composite analysis summary (KPIs, anomalies, forecast, health) for the Copilot",
+)
+def dataset_summary(dataset_id: int, db: DbSession, user: CurrentUser) -> dict:
+    """One-call composite analysis: KPIs, trend, anomalies, forecast, and health
+    score. Powers the Copilot's analysis-complete checklist and guided report."""
+    dataset = _load_dataset(db, dataset_id, user)
+    points = _load_points(db, dataset)
+    if len(points) < 3:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="at least 3 data points are required for analysis",
+        )
+    cached = cache_service.cache_get_json("sum", dataset_id, user.id)
+    if cached is not None:
+        return cached
+
+    series = analytics_service.resample(points, dataset.granularity)
+    kpis = analytics_service.compute_kpis(series)
+    trend = analytics_service.linear_trend(points)
+    response = detect_anomalies(points, window=7, threshold=3.0)
+
+    mean = sum(p.value for p in points) / len(points)
+    slope_pct = (trend.slope / mean * 100.0) if mean else 0.0
+
+    forecast_data = None
+    try:
+        fc = forecast_service.forecast(
+            points, horizon=30, method="auto", granularity=dataset.granularity
+        )
+        forecast_data = {
+            "method": fc.method,
+            "horizon": fc.horizon,
+            "seasonality": fc.seasonality,
+            "mape": fc.metrics.mape,
+            "points": [p.model_dump() for p in fc.points],
+        }
+    except Exception:
+        forecast_data = None
+
+    health = intelligence_service.health_score(
+        points, anomalies=response.anomalies, granularity=dataset.granularity
+    )
+
+    payload = {
+        "dataset_id": dataset.id,
+        "name": dataset.name,
+        "currency": dataset.currency,
+        "granularity": dataset.granularity,
+        "kpis": [k.model_dump() for k in kpis],
+        "trend": {
+            "direction": trend.direction,
+            "slope_per_period_pct": round(slope_pct, 2),
+            "r_squared": trend.r_squared,
+        },
+        "anomaly_count": len(response.anomalies),
+        "critical_anomalies": response.summary.get("critical", 0),
+        "forecast": forecast_data,
+        "health": {
+            "score": health["score"],
+            "grade": health["grade"],
+            "verdict": health["verdict"],
+        },
+    }
+    cache_service.cache_set_json(payload, "sum", dataset_id, user.id, ttl=120)
+    return payload
+
+
 @router.post("/chat", response_model=ChatOut, summary="Ask about your data in plain language")
-def chat(payload: ChatRequest, db: DbSession, user: CurrentUser) -> ChatOut:
+def chat(
+    payload: ChatRequest,
+    db: DbSession,
+    user: CurrentUser,
+    _: Annotated[None, Depends(user_rate_limit(max_requests=30, window_seconds=60))],
+) -> ChatOut:
     if not payload.message.strip():
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="message is required"

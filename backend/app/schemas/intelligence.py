@@ -120,6 +120,8 @@ class DatasetVersionOut(ORMModel):
     points_added: int
     points_removed: int
     total_after: int
+    filename: str | None = None
+    status: str = "success"
     created_at: datetime
 
 

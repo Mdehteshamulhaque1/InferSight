@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.api.deps import CurrentUser, DbSession
+from app.api.deps import CurrentUser, DbSession, user_rate_limit
 from app.schemas.common import Message, Paginated
 from app.schemas.intelligence import AlertOut
 from app.services import alert_service, dataset_service
@@ -64,7 +64,12 @@ def unread_count(db: DbSession, user: CurrentUser) -> dict:
     status_code=status.HTTP_201_CREATED,
     summary="Detect anomalies and persist alerts",
 )
-def sync_alerts(dataset_id: int, db: DbSession, user: CurrentUser) -> dict:
+def sync_alerts(
+    dataset_id: int,
+    db: DbSession,
+    user: CurrentUser,
+    _: Annotated[None, Depends(user_rate_limit(max_requests=20, window_seconds=300))],
+) -> dict:
     dataset = _load_dataset(db, dataset_id, user)
     points = _load_points(db, dataset)
     if len(points) < 6:

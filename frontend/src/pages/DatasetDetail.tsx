@@ -721,9 +721,11 @@ export function DatasetDetail() {
                       <div className="row" style={{ gap: 8 }}>
                         <span className="pill pill-soft">v{v.version_no}</span>
                         <span className="pill pill-ink">{v.source}</span>
+                        {v.status !== 'success' && <span className="pill pill-ruby">{v.status}</span>}
                       </div>
                       <div className="meta num" style={{ fontSize: 12, marginTop: 4 }}>
                         {new Date(v.created_at).toLocaleString()} · +{v.points_added} · −{v.points_removed} · {v.total_after} points
+                        {v.filename ? ` · ${v.filename}` : ''}
                       </div>
                     </div>
                     <button className="btn btn-ghost btn-sm" onClick={() => void onRollback(v.version_no)}>
@@ -753,6 +755,7 @@ export function DatasetDetail() {
                   <tr>
                     <th>Version</th>
                     <th>Source</th>
+                    <th>File</th>
                     <th className="num">Added</th>
                     <th className="num">Removed</th>
                     <th className="num">Total after</th>
@@ -764,7 +767,11 @@ export function DatasetDetail() {
                   {versions.data?.items.map((v) => (
                     <tr key={v.id}>
                       <td><span className="pill pill-soft">v{v.version_no}</span></td>
-                      <td className="strong">{v.source}</td>
+                      <td className="strong">
+                        {v.source}
+                        {v.status !== 'success' && <span className="pill pill-ruby" style={{ marginLeft: 6 }}>{v.status}</span>}
+                      </td>
+                      <td className="meta">{v.filename ?? '—'}</td>
                       <td className="num">+{v.points_added}</td>
                       <td className="num">−{v.points_removed}</td>
                       <td className="num">{v.total_after}</td>

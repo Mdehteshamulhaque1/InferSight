@@ -74,6 +74,7 @@ class DatasetRead(ORMModel):
     is_active: bool
     created_at: datetime
     updated_at: datetime
+    last_import_at: datetime | None = None
     point_count: int = 0
     last_point_at: datetime | None = None
 

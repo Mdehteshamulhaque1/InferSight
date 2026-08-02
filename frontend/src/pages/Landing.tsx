@@ -104,17 +104,6 @@ function Trace() {
   )
 }
 
-const TICKER = [
-  'Anomaly detection',
-  'Forecasting',
-  'Written insights',
-  'Root-cause correlation',
-  'Alert routing',
-  'Health scores',
-  'KPI discovery',
-  'CSV · XLSX · PDF exports',
-]
-
 const FEATURES: { icon: ComponentType<IconProps>; title: string; desc: string }[] = [
   {
     icon: IconActivity,
@@ -188,7 +177,7 @@ const PRODUCTS: {
     tag: 'Export',
     title: 'Reports',
     desc: 'One-click CSV, XLSX, and PDF exports of datasets, forecasts, and anomaly runs.',
-    to: '/app/datasets',
+    to: '/app/reports',
   },
   {
     icon: IconHealth,
@@ -226,13 +215,6 @@ const STEPS: { num: string; icon: ComponentType<IconProps>; title: string; desc:
   },
 ]
 
-const STATS: { value: string; label: string }[] = [
-  { value: '3.2M', label: 'points scored every week' },
-  { value: '4', label: 'forecast models per dataset' },
-  { value: '6', label: 'delivery channels for alerts' },
-  { value: '0', label: 'hand-written explanations' },
-]
-
 export function Landing() {
   const { user } = useAuth()
   usePageTitle('')
@@ -262,12 +244,11 @@ export function Landing() {
           <a href="#features">Platform</a>
           <a href="#products">Products</a>
           <a href="#how">How it runs</a>
-          <a href="#stats">Numbers</a>
         </div>
         <div className="ld-actions">
           {user ? (
-            <Link className="btn-amber" to="/app/dashboard">
-              Open dashboard <IconArrowRight size={14} />
+            <Link className="btn-amber" to="/app/home">
+              Open app <IconArrowRight size={14} />
             </Link>
           ) : (
             <>
@@ -300,8 +281,8 @@ export function Landing() {
             next with confidence bands, and writes the explanation — automatically.
           </p>
           <div className="ld-cta-row ld-fade" style={{ animationDelay: '450ms' }}>
-            <Link className="btn-amber" to={user ? '/app/dashboard' : '/register'}>
-              {user ? 'Open dashboard' : 'Start free'} <IconArrowRight size={15} />
+            <Link className="btn-amber" to={user ? '/app/home' : '/register'}>
+              {user ? 'Open app' : 'Start free'} <IconArrowRight size={15} />
             </Link>
             {!user && (
               <Link className="btn-ghost" to="/login">
@@ -344,14 +325,6 @@ export function Landing() {
         </div>
       </header>
 
-      <div className="ld-ticker" aria-hidden="true">
-        <div className="ld-ticker-track">
-          {[...TICKER, ...TICKER].map((item, i) => (
-            <span key={i}>{item}</span>
-          ))}
-        </div>
-      </div>
-
       <section className="ld-features" id="features">
         <div className="ld-section-head">
           <span className="ld-eyebrow">Platform</span>
@@ -370,23 +343,10 @@ export function Landing() {
         ))}
       </section>
 
-      <section className="ld-statement">
-        <span className="ld-eyebrow">The thesis</span>
-        <p className="ld-statement-line">
-          Your metrics are talking.
-          <br />
-          <em>We make sure you hear them.</em>
-        </p>
-        <p className="ld-statement-sub">
-          InferSight scores every point, correlates every spike, and writes the explanation —
-          so your team acts on the signal, not the dashboard.
-        </p>
-      </section>
-
       <section className="ld-products" id="products">
         <div className="ld-section-head">
           <span className="ld-eyebrow">Platform</span>
-          <h2>Pick your weapon.</h2>
+          <h2>What's included.</h2>
           <p>Six modules. One pipeline. No setup gymnastics.</p>
         </div>
         <div className="ld-product-grid">
@@ -449,23 +409,14 @@ export function Landing() {
         </div>
       </section>
 
-      <section className="ld-stats" id="stats">
-        {STATS.map((s) => (
-          <div className="stat" key={s.label}>
-            <b>{s.value}</b>
-            <span>{s.label}</span>
-          </div>
-        ))}
-      </section>
-
       <section className="ld-join" id="join">
         <div className="inner">
           <span className="ld-eyebrow">Open beta</span>
           <h2>Your metrics are talking.</h2>
           <p>Create a team, upload a CSV, and get your first explanation in under a minute.</p>
           <div className="ld-cta-row">
-            <Link className="btn-ink" to={user ? '/app/dashboard' : '/register'}>
-              {user ? 'Open dashboard' : 'Start free'} <IconArrowRight size={15} />
+            <Link className="btn-ink" to={user ? '/app/home' : '/register'}>
+              {user ? 'Open app' : 'Start free'} <IconArrowRight size={15} />
             </Link>
             {!user && (
               <Link className="btn-ghost" to="/login">
@@ -480,17 +431,19 @@ export function Landing() {
         <div className="cols">
           <div>
             <h4>Product</h4>
+            <Link to="/app/home">Copilot</Link>
             <Link to="/app/dashboard">Dashboard</Link>
             <Link to="/app/datasets">Datasets</Link>
             <Link to="/app/insights">Insights</Link>
             <Link to="/app/alerts">Alerts</Link>
+            <Link to="/app/reports">Reports</Link>
           </div>
           <div>
             <h4>Platform</h4>
-            <a href="#products">Anomaly detection</a>
-            <a href="#products">Forecasting</a>
-            <a href="#products">Written insights</a>
-            <a href="#products">Related signals</a>
+            <a href="#features">Anomaly detection</a>
+            <a href="#features">Forecasting</a>
+            <a href="#features">Written insights</a>
+            <a href="#features">Related signals</a>
           </div>
           <div>
             <h4>How it works</h4>
@@ -501,8 +454,6 @@ export function Landing() {
           </div>
           <div>
             <h4>Project</h4>
-            <a href="#features">Documentation</a>
-            <a href="#stats">Numbers</a>
             <Link to="/login">Sign in</Link>
             <Link to="/register">Create account</Link>
           </div>

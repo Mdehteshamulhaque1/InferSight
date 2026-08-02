@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.api.deps import CurrentUser, DbSession
+from app.api.deps import CurrentUser, DbSession, user_rate_limit
 from app.schemas.common import Message, Paginated
 from app.schemas.insight import InsightOut
 from app.services import analytics_service, dataset_service, insight_service
@@ -25,6 +25,7 @@ def generate_insight(
     dataset_id: int,
     db: DbSession,
     user: CurrentUser,
+    _: Annotated[None, Depends(user_rate_limit(max_requests=20, window_seconds=300))],
     enrich_with_llm: Annotated[bool, Query()] = True,
 ) -> InsightOut:
     try:

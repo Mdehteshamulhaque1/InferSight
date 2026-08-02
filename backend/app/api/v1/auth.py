@@ -21,6 +21,7 @@ from app.services.auth_service import (
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 LoginRateLimit = Annotated[None, Depends(rate_limit(max_requests=20, window_seconds=300))]
+RegisterRateLimit = Annotated[None, Depends(rate_limit(max_requests=10, window_seconds=3600))]
 
 
 def _client_context(request: Request) -> tuple[str | None, str | None]:
@@ -35,7 +36,9 @@ def _client_context(request: Request) -> tuple[str | None, str | None]:
     status_code=status.HTTP_201_CREATED,
     summary="Register a new account",
 )
-def register(payload: UserCreate, request: Request, db: DbSession) -> TokenPair:
+def register(
+    payload: UserCreate, request: Request, db: DbSession, _: RegisterRateLimit
+) -> TokenPair:
     try:
         user = auth_service.create_user(
             db, email=payload.email, password=payload.password, full_name=payload.full_name
