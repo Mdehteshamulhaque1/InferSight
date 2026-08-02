@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { JSX } from 'react'
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../app/providers/AuthContext'
 import { api } from '../../api'
 import { useAsync } from '../../hooks/useAsync'
@@ -76,12 +76,12 @@ export function Layout() {
         onClick={() => setSidebarOpen(false)}
       />
       <aside className={`sidebar${sidebarOpen ? ' open' : ''}`}>
-        <div className="side-brand">
+        <Link className="side-brand" to="/" title="Go to InferSight home">
           <span className="mark">
             <IconTrend size={16} />
           </span>
           <span className="word">InferSight</span>
-        </div>
+        </Link>
         <nav className="side-nav" aria-label="Main">
           {sections.map((s) => (
             <div key={s.label}>
@@ -117,8 +117,8 @@ export function Layout() {
               onClick={() => void logout()}
               style={{
                 background: 'transparent',
-                borderColor: 'rgba(255,255,255,0.12)',
-                color: 'rgba(255,255,255,0.7)',
+                borderColor: 'rgba(10,13,18,0.14)',
+                color: 'rgba(10,13,18,0.7)',
               }}
             >
               <IconLogout size={16} />

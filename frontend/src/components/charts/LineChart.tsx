@@ -179,7 +179,7 @@ export function LineChart({
             x2={width - M.right}
             y1={y(t)}
             y2={y(t)}
-            stroke="rgba(255,255,255,0.06)"
+            stroke="rgba(10,13,18,0.08)"
             strokeWidth={1}
             vectorEffect="non-scaling-stroke"
           />
