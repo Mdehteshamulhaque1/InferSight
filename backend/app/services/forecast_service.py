@@ -16,7 +16,6 @@ reporting MAPE / MAE / RMSE. Forecasts carry growing confidence intervals
 from __future__ import annotations
 
 import math
-from datetime import datetime
 
 from app.schemas.forecast import ForecastMetrics, ForecastPoint, ForecastResponse
 from app.utils.time import add_period

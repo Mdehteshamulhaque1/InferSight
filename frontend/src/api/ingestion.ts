@@ -1,4 +1,4 @@
-import { request, uploadFile } from './http'
+import { uploadFile } from './http'
 import type { AutoImportResult, IngestResult, PreviewReport } from '../types'
 
 export const ingestionApi = {

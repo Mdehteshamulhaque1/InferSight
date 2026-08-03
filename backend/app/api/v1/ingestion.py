@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
+from pydantic import ValidationError
 
 from app.api.deps import CurrentUser, DbSession, user_rate_limit
 from app.models.dataset import utcnow
@@ -65,8 +66,10 @@ def _infer_name(filename: str, value_column: str) -> str:
         if w.lower() not in _GENERIC_STEMS and not w.replace(".", "").isdigit()
     ]
     if words:
-        return " ".join(w[:1].upper() + w[1:] for w in words)
-    return f"{value_column.strip().title()} dataset"
+        name = " ".join(w[:1].upper() + w[1:] for w in words)
+        if len(name) >= 2:
+            return name
+    return f"{value_column.strip().title() or 'Metric'} dataset"
 
 
 def _infer_attrs(
@@ -206,7 +209,12 @@ def auto_import(
     from app.schemas.dataset import DatasetCreate
 
     attrs = _infer_attrs(filename, raw, parsed)
-    payload = DatasetCreate(**attrs)
+    try:
+        payload = DatasetCreate(**attrs)
+    except ValidationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)
+        ) from exc
     try:
         dataset = dataset_service.create_dataset(db, user, payload)
     except SlugConflictError as exc:

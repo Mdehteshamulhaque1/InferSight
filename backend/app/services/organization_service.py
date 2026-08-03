@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.models.organization import Organization, OrganizationMember
 from app.models.user import User
 from app.services.auth_service import get_user_by_email
-from app.services.rbac_service import ROLE_ORDER, WRITE_ROLES
+from app.services.rbac_service import ROLE_ORDER
 
 ROLES = ("owner", "admin", "manager", "analyst")
 

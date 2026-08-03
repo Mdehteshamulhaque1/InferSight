@@ -6,7 +6,7 @@ from typing import Annotated
 
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, status
 
 from app.api.deps import CurrentUser, DbSession
 from app.schemas.common import Message, Paginated
@@ -15,7 +15,6 @@ from app.schemas.dataset import (
     DatasetCreate,
     DatasetRead,
     DatasetUpdate,
-    PointCreate,
     PointsBulkCreate,
     PointRead,
 )

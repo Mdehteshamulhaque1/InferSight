@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import Annotated
 
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.api.deps import CurrentUser, DbSession, user_rate_limit
@@ -50,6 +52,18 @@ def _load_points(db: DbSession, dataset):
             detail="dataset has no metric points to analyze",
         )
     return points
+
+
+def _normalize_timestamps(value: object) -> object:
+    """Render datetimes as ISO-8601 UTC strings so cached and uncached
+    responses are byte-identical (FastAPI emits the same 'Z' format)."""
+    if isinstance(value, datetime):
+        return value.isoformat().replace("+00:00", "Z")
+    if isinstance(value, dict):
+        return {k: _normalize_timestamps(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_normalize_timestamps(v) for v in value]
+    return value
 
 
 # --------------------------------------------------------------------------- #
@@ -276,6 +290,7 @@ def dataset_summary(dataset_id: int, db: DbSession, user: CurrentUser) -> dict:
             "verdict": health["verdict"],
         },
     }
+    payload = _normalize_timestamps(payload)
     cache_service.cache_set_json(payload, "sum", dataset_id, user.id, ttl=120)
     return payload
 

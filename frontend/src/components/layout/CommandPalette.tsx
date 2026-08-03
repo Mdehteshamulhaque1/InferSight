@@ -138,7 +138,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
           {groups.map((g) => (
             <div key={g.name}>
               <div className="palette-group-label">{g.name}</div>
-              {g.items.map((c, i) => {
+              {g.items.map((c) => {
                 const Icon = c.icon
                 const idx = filtered.indexOf(c)
                 return (
