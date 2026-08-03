@@ -179,7 +179,7 @@ export function LineChart({
             x2={width - M.right}
             y1={y(t)}
             y2={y(t)}
-            stroke="rgba(10,13,18,0.08)"
+            stroke="rgba(24,24,24,0.08)"
             strokeWidth={1}
             vectorEffect="non-scaling-stroke"
           />
@@ -441,7 +441,7 @@ export function LineChart({
               borderRadius: 10,
               padding: '9px 12px',
               fontSize: 12,
-              boxShadow: '0 12px 30px rgba(0,0,0,0.5), 0 0 0 1px var(--hairline)',
+              boxShadow: '0 12px 30px rgba(3,45,96,0.18), 0 0 0 1px var(--hairline)',
               zIndex: 5,
               minWidth: 150,
             }}

@@ -132,8 +132,8 @@ export function Layout() {
               onClick={() => void logout()}
               style={{
                 background: 'transparent',
-                borderColor: 'rgba(10,13,18,0.14)',
-                color: 'rgba(10,13,18,0.7)',
+                borderColor: 'var(--hairline-strong)',
+                color: 'var(--ink-secondary)',
               }}
             >
               <IconLogout size={16} />
